@@ -3,16 +3,12 @@ name: Frontend CI
 on:
   push:
     branches: [ main, develop ]
-    paths:
-      - 'frontend/**'
   pull_request:
     branches: [ main, develop ]
-    paths:
-      - 'frontend/**'
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Test & Build Frontend
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,26 +19,20 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Dependencies
-        working-directory: frontend
         run: npm ci
 
       - name: Run Linting
-        working-directory: frontend
         run: npm run lint
 
       - name: Run Type Check
-        working-directory: frontend
         run: npm run type-check
 
       - name: Run Tests
-        working-directory: frontend
         run: npm test
 
       - name: Build Application
-        working-directory: frontend
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
@@ -51,12 +41,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: frontend-build
-          path: frontend/.next
+          path: .next
+          retention-days: 7
 
-  create-release:
-    needs: test
+  release:
+    needs: test-and-build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v3
 
@@ -64,22 +56,28 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: frontend-build
-          path: frontend/.next
+          path: .next
+
+      - name: Get Current Date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: frontend-v${{ github.run_number }}
+          tag_name: v${{ github.run_number }}
           release_name: Frontend Release v${{ github.run_number }}
           body: |
-            Frontend Release v${{ github.run_number }}
+            ✨ Frontend Release v${{ github.run_number }}
             
-            Changes in this release:
+            📅 Release Date: ${{ steps.date.outputs.date }}
+            👤 Released by: ${{ github.actor }}
+            
+            📝 Changes:
             ${{ github.event.head_commit.message }}
             
-            Build Date: ${{ env.DATE }}
+            🔗 Commit: ${{ github.sha }}
           draft: false
           prerelease: false
