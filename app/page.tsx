@@ -11,20 +11,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [inputQuery, setInputQuery] = useState('') // Input value
+  const [searchQuery, setSearchQuery] = useState('') // Actual search term used in API
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     const fetchWallpapers = async () => {
       try {
         setLoading(true)
-        let response
-
-        if (isSearching) {
-          response = await wallpaperApi.searchWallpapers(searchQuery, page)
-        } else {
-          response = await wallpaperApi.getWallpapers(page)
-        }
+        const response = isSearching
+          ? await wallpaperApi.searchWallpapers(searchQuery, page)
+          : await wallpaperApi.getWallpapers(page)
 
         setWallpapers(response.data)
         setTotalPages(response.pagination.totalPages)
@@ -37,16 +34,14 @@ export default function Home() {
     }
 
     fetchWallpapers()
-  }, [page, isSearching]) // Removed searchQuery dependency
+  }, [page, isSearching, searchQuery]) // Now includes searchQuery
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (searchQuery.trim()) {
-      setPage(1)
-      setIsSearching(true)
-    } else {
-      setIsSearching(false)
-    }
+    const trimmedQuery = inputQuery.trim()
+    setSearchQuery(trimmedQuery)
+    setIsSearching(!!trimmedQuery)
+    setPage(1) // Reset to first page for new searches
   }
 
   if (error) {
@@ -64,14 +59,13 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Find the perfect wallpaper for your desktop or mobile device.
           </p>
-
-          {/* Search Bar */}
+          {/* Search form remains the same, but uses inputQuery */}
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-2">
             <div className="relative flex-1">
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
                 placeholder="Search wallpapers..."
                 className="w-full px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 focus:outline-none focus:border-white/40 transition-colors"
               />
