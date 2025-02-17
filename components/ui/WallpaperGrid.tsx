@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Wallpaper } from '@/lib/types/wallpaper'
+import { wallpaperApi } from '@/lib/api'
 import {
     ArrowDownTrayIcon,
     HeartIcon,
@@ -35,16 +36,7 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
 
     const handleDownload = async (wallpaper: Wallpaper) => {
         try {
-            const response = await fetch(wallpaper.download_url);
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${wallpaper.name}.${wallpaper.format}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            await wallpaperApi.downloadWallpaper(wallpaper.publicId);
         } catch (error) {
             console.error('Download failed:', error);
         }
@@ -67,7 +59,7 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {wallpapers.map((wallpaper) => (
                     <div
-                        key={wallpaper.public_id}
+                        key={wallpaper.publicId}
                         className="relative aspect-[16/9] overflow-hidden rounded-lg bg-gray-800 group"
                     >
                         {/* Quality Label */}
@@ -77,13 +69,22 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
                             </span>
                         </div>
 
+                        {/* Tags */}
+                        <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[70%]">
+                            {wallpaper.tags.slice(0, 3).map(tag => (
+                                <span key={tag.id} className="px-2 py-1 rounded-full bg-black/50 text-white text-xs">
+                                    {tag.name}
+                                </span>
+                            ))}
+                        </div>
+
                         {/* Image */}
-                        {!imageErrors[wallpaper.public_id] ? (
+                        {!imageErrors[wallpaper.publicId] ? (
                             <img
-                                src={wallpaper.preview_url}
+                                src={wallpaper.previewUrl}
                                 alt={wallpaper.name}
                                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                                onError={() => handleImageError(wallpaper.public_id)}
+                                onError={() => handleImageError(wallpaper.publicId)}
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -102,11 +103,11 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
                                     <ArrowDownTrayIcon className="w-5 h-5" />
                                 </button>
                                 <button
-                                    onClick={() => toggleFavorite(wallpaper.public_id)}
+                                    onClick={() => toggleFavorite(wallpaper.publicId)}
                                     className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                                     title="Favorite"
                                 >
-                                    {favorites.has(wallpaper.public_id) ? (
+                                    {favorites.has(wallpaper.publicId) ? (
                                         <HeartSolidIcon className="w-5 h-5 text-red-500" />
                                     ) : (
                                         <HeartIcon className="w-5 h-5" />
@@ -171,7 +172,7 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
                         {/* Modal Body */}
                         <div className="relative w-full h-[80vh] flex items-center justify-center p-4">
                             <img
-                                src={selectedWallpaper.download_url}
+                                src={selectedWallpaper.downloadUrl}
                                 alt={selectedWallpaper.name}
                                 className="max-w-full max-h-full object-contain transition-transform duration-200"
                                 style={{ transform: `scale(${zoomLevel})` }}
