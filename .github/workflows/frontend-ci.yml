@@ -1,0 +1,85 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  test:
+    name: Test & Build Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Linting
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run Type Check
+        working-directory: frontend
+        run: npm run type-check
+
+      - name: Run Tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Build Application
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/.next
+
+  create-release:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/.next
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: frontend-v${{ github.run_number }}
+          release_name: Frontend Release v${{ github.run_number }}
+          body: |
+            Frontend Release v${{ github.run_number }}
+            
+            Changes in this release:
+            ${{ github.event.head_commit.message }}
+            
+            Build Date: ${{ env.DATE }}
+          draft: false
+          prerelease: false
