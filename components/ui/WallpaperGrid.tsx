@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { Wallpaper } from '@/lib/types/wallpaper'
 import { wallpaperApi } from '@/lib/api'
 import {
@@ -80,12 +81,18 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
 
                         {/* Image */}
                         {!imageErrors[wallpaper.publicId] ? (
-                            <img
-                                src={wallpaper.previewUrl}
-                                alt={wallpaper.name}
-                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                                onError={() => handleImageError(wallpaper.publicId)}
-                            />
+                            <div className="relative w-full h-full">
+                                <Image
+                                    src={wallpaper.previewUrl}
+                                    alt={wallpaper.name}
+                                    fill
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    onError={() => handleImageError(wallpaper.publicId)}
+                                    priority={false}
+                                    quality={75}
+                                />
+                            </div>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
                                 Failed to load image
@@ -171,12 +178,17 @@ export default function WallpaperGrid({ wallpapers }: WallpaperGridProps) {
 
                         {/* Modal Body */}
                         <div className="relative w-full h-[80vh] flex items-center justify-center p-4">
-                            <img
-                                src={selectedWallpaper.downloadUrl}
-                                alt={selectedWallpaper.name}
-                                className="max-w-full max-h-full object-contain transition-transform duration-200"
-                                style={{ transform: `scale(${zoomLevel})` }}
-                            />
+                            <div className="relative w-full h-full">
+                                <Image
+                                    src={selectedWallpaper.downloadUrl}
+                                    alt={selectedWallpaper.name}
+                                    fill
+                                    className="object-contain transition-transform duration-200"
+                                    style={{ transform: `scale(${zoomLevel})` }}
+                                    quality={100}
+                                    priority
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
