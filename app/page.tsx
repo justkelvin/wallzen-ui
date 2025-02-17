@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import WallpaperGrid from '@/components/ui/WallpaperGrid'
 import { Wallpaper } from '@/lib/types/wallpaper'
-import { api } from '@/lib/api'
+import { wallpaperApi } from '@/lib/api'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
 export default function Home() {
@@ -20,31 +20,33 @@ export default function Home() {
         setLoading(true)
         let response
 
-        if (searchQuery && isSearching) {
-          response = await api.searchWallpapers(searchQuery)
+        if (isSearching) {
+          response = await wallpaperApi.searchWallpapers(searchQuery, page)
         } else {
-          response = await api.getWallpapers(page)
+          response = await wallpaperApi.getWallpapers(page)
         }
 
-        console.log('API Response:', response) // Debug log
         setWallpapers(response.data)
-        setTotalPages(response.pagination.total_pages)
+        setTotalPages(response.pagination.totalPages)
       } catch (error) {
         console.error('Error fetching wallpapers:', error)
         setError('Failed to load wallpapers')
       } finally {
         setLoading(false)
-        setIsSearching(false)
       }
     }
 
     fetchWallpapers()
-  }, [page, isSearching])
+  }, [page, isSearching]) // Removed searchQuery dependency
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1)
-    setIsSearching(true)
+    if (searchQuery.trim()) {
+      setPage(1)
+      setIsSearching(true)
+    } else {
+      setIsSearching(false)
+    }
   }
 
   if (error) {
@@ -84,27 +86,32 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Wallpaper Grid Section */}
       {loading ? (
-        <div className="text-center">Loading...</div>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
       ) : wallpapers.length > 0 ? (
         <>
           <WallpaperGrid wallpapers={wallpapers} />
+
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-8 flex justify-center gap-4">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 bg-white/10 rounded-full disabled:opacity-50"
+                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
-              <span className="px-4 py-2">
+              <div className="px-4 py-2 rounded-full bg-white/10">
                 Page {page} of {totalPages}
-              </span>
+              </div>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-2 bg-white/10 rounded-full disabled:opacity-50"
+                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>
@@ -112,7 +119,14 @@ export default function Home() {
           )}
         </>
       ) : (
-        <div className="text-center text-gray-500">No wallpapers found</div>
+        <div className="text-center text-gray-500 py-12">
+          <p className="text-xl">No wallpapers found</p>
+          {searchQuery && (
+            <p className="mt-2">
+              Try adjusting your search query or browse our collection
+            </p>
+          )}
+        </div>
       )}
     </main>
   )
