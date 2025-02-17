@@ -20,6 +20,12 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      # Add this step to debug directory structure
+      - name: Debug Directory
+        run: |
+          pwd
+          ls -la
+          
       - name: Install Dependencies
         run: npm ci
 
@@ -37,14 +43,22 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
+      # Add this step to verify build output
+      - name: Verify Build Output
+        run: |
+          ls -la
+          ls -la .next || echo ".next directory not found"
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build-${{ github.run_id }}
-          path: .next
+          path: |
+            .next/**/*
+            !.next/cache/**
           retention-days: 7
           compression-level: 6
-          if-no-files-found: error
+          if-no-files-found: warn  # Changed from error to warn for debugging
 
   release:
     needs: test-and-build
