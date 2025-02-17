@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="bg-gray-950 text-white">
         <Navbar />
         <div className="pt-16"> {/* Add padding to account for fixed navbar */}
